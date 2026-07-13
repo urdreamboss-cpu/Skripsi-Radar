@@ -105,4 +105,3 @@ elif menu == "Upgrade Premium":
 
     st.info("Setelah transfer, silakan kirim bukti pembayaran ke WhatsApp Admin agar akses segera diaktifkan.")
     st.link_button("Konfirmasi via WhatsApp", "https://wa.me/6285922033291?text=Halo%20Admin,%20saya%20sudah%20transfer%20untuk%20Skripsi%20Radar.")
-```eof
