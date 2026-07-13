@@ -1,34 +1,38 @@
 import streamlit as st
-import streamlit_authenticator as stauth
 import google.generativeai as genai
 
-#st.set_page_config(page_title="Skripsi Radar Pro", page_icon="🎓", layout="wide")
+# Konfigurasi Halaman
+st.set_page_config(page_title="Skripsi Radar Pro", page_icon="🎓", layout="wide")
 
-#st.markdown("""
+# CSS Kustom
+st.markdown("""
     <style>
     .main-card { background: white; padding: 2rem; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); border: 1px solid #e2e8f0; }
     .stButton>button { width: 100%; border-radius: 0.5rem; background-color: #2563eb; color: white; font-weight: 600; }
     </style>
 """, unsafe_allow_html=True)
 
-## (Disini nanti Anda bisa hubungkan ke file config/yaml untuk autentikasi nyata)
+# Sidebar Login
 st.sidebar.title("Login Akses")
 username = st.sidebar.text_input("Username")
 password = st.sidebar.text_input("Password", type="password")
 
-#try:
-    # Pastikan API_KEY sudah diisi di Streamlit Secrets
+# Konfigurasi AI
+try:
     genai.configure(api_key=st.secrets["API_KEY"])
     model_text = genai.GenerativeModel('gemini-1.5-flash')
 except:
     st.error("API Key belum disetting di Secrets!")
     st.stop()
 
-#menu = st.sidebar.radio("Navigasi", ["Generator Ide", "Thesis Lab", "Riwayat"])
+# Navigasi Menu
+menu = st.sidebar.radio("Navigasi", ["Generator Ide", "Thesis Lab", "Riwayat", "Upgrade Premium"])
 
-if 'history' not in st.session_state: st.session_state.history = []
+if 'history' not in st.session_state: 
+    st.session_state.history = []
 
-#if menu == "Generator Ide":
+# Logika Menu
+if menu == "Generator Ide":
     st.title("🎓 Generator Judul Skripsi Hukum")
     st.write("Isi parameter di bawah agar AI memberikan hasil yang sangat spesifik.")
     
@@ -58,7 +62,7 @@ if 'history' not in st.session_state: st.session_state.history = []
             st.markdown(f'<div class="main-card">{response.text}</div>', unsafe_allow_html=True)
             st.session_state.history.append(f"Generator ({bidang}, {jenis}): {response.text}")
 
-#elif menu == "Thesis Lab":
+elif menu == "Thesis Lab":
     st.title("🛠 Thesis Lab")
     sub_tool = st.selectbox("Pilih Alat:", ["Kembangkan Judul", "10 Alternatif", "Persempit Sub-topik", "Uji Dosen TTS"])
     judul_input = st.text_input("Masukkan judul Anda:")
@@ -78,10 +82,27 @@ if 'history' not in st.session_state: st.session_state.history = []
             st.markdown(f'<div class="main-card">{res.text}</div>', unsafe_allow_html=True)
             st.session_state.history.append(f"{sub_tool} ({judul_input}): {res.text}")
 
-#elif menu == "Riwayat":
+elif menu == "Riwayat":
     st.title("📜 Riwayat")
     if st.session_state.history:
         for item in st.session_state.history:
             st.write("- " + item)
     else:
         st.write("Belum ada riwayat.")
+
+elif menu == "Upgrade Premium":
+    st.title("💎 Upgrade ke Premium")
+    st.write("Dapatkan akses penuh ke fitur riset lanjutan, analisis mendalam, dan dukungan prioritas.")
+    
+    st.subheader("💳 Detail Pembayaran")
+    st.markdown("""
+    Silakan melakukan transfer ke rekening berikut:
+    - **Bank:** BRI
+    - **Nomor Rekening:** 068801022550502
+    - **Atas Nama:** ELSA JAINIFER EUNIKE BAGARAI
+    - **Jumlah:** Rp 25.000
+    """)
+
+    st.info("Setelah transfer, silakan kirim bukti pembayaran ke WhatsApp Admin agar akses segera diaktifkan.")
+    st.link_button("Konfirmasi via WhatsApp", "https://wa.me/6285922033291?text=Halo%20Admin,%20saya%20sudah%20transfer%20untuk%20Skripsi%20Radar.")
+```eof
