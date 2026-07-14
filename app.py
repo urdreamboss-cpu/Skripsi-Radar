@@ -108,7 +108,6 @@ elif menu == "Thesis Lab":
         else:
             st.warning("Limit gratis habis! Silakan Upgrade ke Premium.")
 
-# --- Bagian Lain (Riwayat & Premium) Sama seperti sebelumnya ---
 elif menu == "Riwayat":
     st.title("📜 Riwayat")
     for item in st.session_state.history: st.write("- " + item)
@@ -119,5 +118,4 @@ elif menu == "Upgrade Premium":
     - **Bank:** BRI | 068801022550502 (ELSA JAINIFER EUNIKE BAGARAI)
     - **Jumlah:** Rp 25.000
     """)
-    st.link_button("Konfirmasi via WhatsApp", "https://wa.me/6285922033291?text=Halo%20Admin,%20saya%20sudah%20transfer%20untuk%20Skripsi%20Radar.")
-```
+    st.link_button("Konfirmasi via WhatsApp", "[https://wa.me/6285922033291?text=Halo%20Admin,%20saya%20sudah%20transfer%20untuk%20Skripsi%20Radar](https://wa.me/6285922033291?text=Halo%20Admin,%20saya%20sudah%20transfer%20untuk%20Skripsi%20Radar).")
