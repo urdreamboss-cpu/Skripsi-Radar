@@ -1,5 +1,5 @@
 import streamlit as st
-import google.generativeai as genai
+from groq import Groq
 
 # Konfigurasi Halaman
 st.set_page_config(page_title="Skripsi Radar Pro", page_icon="🎓", layout="wide")
@@ -17,13 +17,20 @@ st.sidebar.title("Login Akses")
 username = st.sidebar.text_input("Username")
 password = st.sidebar.text_input("Password", type="password")
 
-# Konfigurasi AI
+# Konfigurasi AI (Groq)
 try:
-    genai.configure(api_key=st.secrets["API_KEY"])
-    model_text = genai.GenerativeModel('gemini-1.5-flash')
-except:
+    client = Groq(api_key=st.secrets["API_KEY"])
+except Exception as e:
     st.error("API Key belum disetting di Secrets!")
     st.stop()
+
+# Fungsi helper untuk panggil AI
+def get_ai_response(prompt):
+    chat_completion = client.chat.completions.create(
+        messages=[{"role": "user", "content": prompt}],
+        model="llama-3.1-8b-instant", # Cepat dan stabil
+    )
+    return chat_completion.choices[0].message.content
 
 # Navigasi Menu
 menu = st.sidebar.radio("Navigasi", ["Generator Ide", "Thesis Lab", "Riwayat", "Upgrade Premium"])
@@ -58,9 +65,9 @@ if menu == "Generator Ide":
             
             Berikan judul yang menarik untuk sidang skripsi.
             """
-            response = model_text.generate_content(prompt)
-            st.markdown(f'<div class="main-card">{response.text}</div>', unsafe_allow_html=True)
-            st.session_state.history.append(f"Generator ({bidang}, {jenis}): {response.text}")
+            response_text = get_ai_response(prompt)
+            st.markdown(f'<div class="main-card">{response_text}</div>', unsafe_allow_html=True)
+            st.session_state.history.append(f"Generator ({bidang}, {jenis}): {response_text}")
 
 elif menu == "Thesis Lab":
     st.title("🛠 Thesis Lab")
@@ -78,9 +85,9 @@ elif menu == "Thesis Lab":
             elif sub_tool == "Persempit Sub-topik":
                 prompt = f"Berikan 3 sub-topik penelitian yang lebih spesifik dan tajam untuk judul: {judul_input}"
             
-            res = model_text.generate_content(prompt)
-            st.markdown(f'<div class="main-card">{res.text}</div>', unsafe_allow_html=True)
-            st.session_state.history.append(f"{sub_tool} ({judul_input}): {res.text}")
+            res_text = get_ai_response(prompt)
+            st.markdown(f'<div class="main-card">{res_text}</div>', unsafe_allow_html=True)
+            st.session_state.history.append(f"{sub_tool} ({judul_input}): {res_text}")
 
 elif menu == "Riwayat":
     st.title("📜 Riwayat")
@@ -102,6 +109,9 @@ elif menu == "Upgrade Premium":
     - **Atas Nama:** ELSA JAINIFER EUNIKE BAGARAI
     - **Jumlah:** Rp 25.000
     """)
+
+    st.info("Setelah transfer, silakan kirim bukti pembayaran ke WhatsApp Admin agar akses segera diaktifkan.")
+    st.link_button("Konfirmasi via WhatsApp", "https://wa.me/6285922033291?text=Halo%20Admin,%20saya%20sudah%20transfer%20untuk%20Skripsi%20Radar.")
 
     st.info("Setelah transfer, silakan kirim bukti pembayaran ke WhatsApp Admin agar akses segera diaktifkan.")
     st.link_button("Konfirmasi via WhatsApp", "https://wa.me/6285922033291?text=Halo%20Admin,%20saya%20sudah%20transfer%20untuk%20Skripsi%20Radar.")
