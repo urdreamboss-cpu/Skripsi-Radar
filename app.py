@@ -1,5 +1,6 @@
 import streamlit as st
 from groq import Groq
+import requests
 
 st.set_page_config(page_title="Skripsi Radar Si Anak Hukum", page_icon="🎓", layout="wide")
 
@@ -29,13 +30,24 @@ except Exception as e:
     st.error("API Key belum dikonfigurasi di Secrets!")
     st.stop()
 
+def send_telegram_notification(message):
+    """Fungsi untuk mengirim notifikasi ke Telegram"""
+    token = st.secrets.get("TELEGRAM_TOKEN")
+    chat_id = st.secrets.get("TELEGRAM_CHAT_ID")
+    if token and chat_id:
+        url = f"https://api.telegram.org/bot{token}/sendMessage"
+        params = {"chat_id": chat_id, "text": message, "parse_mode": "HTML"}
+        try:
+            requests.get(url, params=params)
+        except:
+            pass
+
 def check_usage_and_generate(prompt, context=""):
-    """Fungsi untuk mengecek kuota sebelum memanggil AI"""
+    """Fungsi untuk mengecek kuota dan memanggil AI"""
     if not st.session_state.is_premium and st.session_state.usage_count >= 3:
         st.error("⚠️ **Kuota Gratis Anda telah habis!** Silakan buka menu 'Upgrade Premium' untuk akses tanpa batas.")
         return None
     
-    # Panggil AI
     full_prompt = f"Konteks Sebelumnya: {context}\n\nPermintaan: {prompt}" if context else prompt
     chat_completion = client.chat.completions.create(
         messages=[{"role": "user", "content": full_prompt}],
@@ -43,7 +55,6 @@ def check_usage_and_generate(prompt, context=""):
     )
     response = chat_completion.choices[0].message.content
     
-    # Increment kuota jika bukan premium
     if not st.session_state.is_premium:
         st.session_state.usage_count += 1
     
@@ -60,7 +71,6 @@ if st.sidebar.button("Hapus Riwayat Chat"):
 if menu == "Generator Ide":
     st.title("🎓 Skripsi Radar Si Anak Hukum")
     
-    # Tampilkan info kuota
     if not st.session_state.is_premium:
         sisa = max(0, 3 - st.session_state.usage_count)
         st.info(f"**Kuota Gratis Anda:** {sisa} / 3 tersisa")
@@ -84,11 +94,9 @@ if menu == "Generator Ide":
             st.session_state.content_list.append({"role": "AI", "text": response})
             st.rerun()
 
-    # Tampilkan Riwayat
     for content in st.session_state.content_list:
         st.markdown(f'<div class="main-card">{content["text"]}</div>', unsafe_allow_html=True)
 
-    # Shortcut Logic
     if st.session_state.content_list:
         st.write("---")
         st.subheader("💡 Tindakan Lanjutan")
@@ -110,7 +118,6 @@ if menu == "Generator Ide":
                     st.session_state.pending_shortcut = None
                     st.rerun()
 
-        # Chat Interface
         st.subheader("💬 Tanya Lebih Lanjut")
         user_chat = st.chat_input("Tanyakan sesuatu tentang judul skripsi Anda...")
         if user_chat:
@@ -136,6 +143,7 @@ elif menu == "Upgrade Premium":
         if st.button("Aktifkan"):
             if code == st.secrets.get("PREMIUM_KEY", "RAHASIA_123"):
                 st.session_state.is_premium = True
+                send_telegram_notification(f"🔔 <b>Ada Aktivasi Premium Baru!</b>\nKode yang digunakan: {code}")
                 st.success("Berhasil! Akun Anda kini Premium.")
                 st.rerun()
             else:
