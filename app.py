@@ -3,43 +3,41 @@ from groq import Groq
 
 st.set_page_config(page_title="Skripsi Radar Pro", page_icon="🎓", layout="wide")
 
-# CSS Kustom
+# CSS Kustom dengan Tema Maroon
 st.markdown("""
     <style>
     .main-card { 
-        background: white; 
+        background: #800000; 
         padding: 2rem; 
         border-radius: 1rem; 
         box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); 
-        border: 1px solid #e2e8f0; 
-        color: #1e293b; 
+        border: 1px solid #600000; 
+        color: #ffffff; 
         margin-bottom: 1rem;
     }
     .history-card {
-        background: #f8fafc;
+        background: #fcf2f2;
         padding: 1rem;
         border-radius: 0.5rem;
         margin-bottom: 1rem;
-        border-left: 4px solid #2563eb;
+        border-left: 4px solid #800000;
+        color: #333333;
     }
-    .stButton>button { width: 100%; border-radius: 0.5rem; background-color: #2563eb; color: white; font-weight: 600; }
+    .stButton>button { width: 100%; border-radius: 0.5rem; background-color: #800000; color: white; font-weight: 600; }
     </style>
-""", unsafe_allow_html=True)
+""", unsafe_html=True)
 
-# --- Inisialisasi State ---
 if 'is_premium' not in st.session_state: st.session_state.is_premium = False
 if 'usage_count' not in st.session_state: st.session_state.usage_count = 0
 if 'history' not in st.session_state: st.session_state.history = []
 if 'latest_response' not in st.session_state: st.session_state.latest_response = None
 
-# --- Konfigurasi AI & Secrets ---
 try:
     client = Groq(api_key=st.secrets["API_KEY"])
 except:
     st.error("API Key belum disetting!")
     st.stop()
 
-# --- Sidebar & Login / Aktivasi ---
 st.sidebar.title("Login Akses")
 if not st.session_state.is_premium:
     with st.sidebar.expander("🔑 Aktivasi Premium"):
@@ -52,14 +50,12 @@ if not st.session_state.is_premium:
             else:
                 st.error("Kode salah.")
 
-# Informasi Status
 if st.session_state.is_premium:
     st.sidebar.success("Status: Member Premium 💎")
 else:
     remaining = max(0, 3 - st.session_state.usage_count)
     st.sidebar.info(f"Sisa akses gratis: {remaining} kali")
 
-# --- Helper Fungsi ---
 def get_ai_response(prompt):
     chat_completion = client.chat.completions.create(
         messages=[{"role": "user", "content": prompt}],
@@ -72,7 +68,6 @@ def can_access():
     if st.session_state.usage_count < 3: return True
     return False
 
-# --- Menu Navigasi ---
 menu = st.sidebar.radio("Navigasi", ["Generator Ide", "Thesis Lab", "Riwayat", "Upgrade Premium"])
 
 if menu == "Generator Ide":
@@ -100,7 +95,7 @@ if menu == "Generator Ide":
             st.warning("Limit gratis habis! Silakan Upgrade ke Premium.")
 
     if st.session_state.latest_response:
-        st.markdown(f'<div class="main-card">{st.session_state.latest_response}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="main-card">{st.session_state.latest_response}</div>', unsafe_html=True)
 
 elif menu == "Thesis Lab":
     st.title("🛠 Thesis Lab")
@@ -119,13 +114,12 @@ elif menu == "Thesis Lab":
             st.warning("Limit gratis habis! Silakan Upgrade ke Premium.")
 
     if st.session_state.latest_response:
-        st.markdown(f'<div class="main-card">{st.session_state.latest_response}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="main-card">{st.session_state.latest_response}</div>', unsafe_html=True)
 
 elif menu == "Riwayat":
     st.title("📜 Riwayat Lengkap")
     if st.session_state.history:
         for item in reversed(st.session_state.history): 
-            # Memastikan aplikasi tidak crash jika ada data lama/format tidak sesuai
             if isinstance(item, dict):
                 st.markdown(f"""
                     <div class="history-card">
@@ -133,7 +127,7 @@ elif menu == "Riwayat":
                         <small>Jawaban:</small><br>
                         {str(item.get('result', '')).replace('\n', '<br>')}
                     </div>
-                """, unsafe_allow_html=True)
+                """, unsafe_html=True)
             else:
                 st.write(f"Riwayat: {item}")
     else:
