@@ -7,7 +7,7 @@ st.set_page_config(page_title="Skripsi Radar Pro", page_icon="🎓", layout="wid
 st.markdown("""
     <style>
     .main-card { 
-        background: maroon; 
+        background: white; 
         padding: 2rem; 
         border-radius: 1rem; 
         box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); 
