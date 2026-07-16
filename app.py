@@ -1,9 +1,10 @@
 import streamlit as st
 from groq import Groq
 
+# 1. Konfigurasi Halaman
 st.set_page_config(page_title="Skripsi Radar Pro", page_icon="🎓", layout="wide")
 
-# CSS Kustom dengan Tema Maroon
+# 2. CSS Kustom dengan Tema Maroon
 st.markdown("""
     <style>
     .main-card { 
@@ -27,17 +28,34 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# 3. Inisialisasi State
 if 'is_premium' not in st.session_state: st.session_state.is_premium = False
 if 'usage_count' not in st.session_state: st.session_state.usage_count = 0
 if 'history' not in st.session_state: st.session_state.history = []
 if 'latest_response' not in st.session_state: st.session_state.latest_response = None
+if 'last_input' not in st.session_state: st.session_state.last_input = ""
 
+# 4. Koneksi API
 try:
     client = Groq(api_key=st.secrets["API_KEY"])
 except:
-    st.error("API Key belum disetting!")
+    st.error("API Key belum disetting di Secrets!")
     st.stop()
 
+# 5. Fungsi AI
+def get_ai_response(prompt, context=""):
+    full_prompt = f"Konteks: {context}\n\nPermintaan: {prompt}" if context else prompt
+    chat_completion = client.chat.completions.create(
+        messages=[{"role": "user", "content": full_prompt}],
+        model="llama-3.1-8b-instant",
+    )
+    return chat_completion.choices[0].message.content
+
+def can_access():
+    if st.session_state.is_premium: return True
+    return st.session_state.usage_count < 3
+
+# 6. Sidebar
 st.sidebar.title("Login Akses")
 if not st.session_state.is_premium:
     with st.sidebar.expander("🔑 Aktivasi Premium"):
@@ -56,84 +74,82 @@ else:
     remaining = max(0, 3 - st.session_state.usage_count)
     st.sidebar.info(f"Sisa akses gratis: {remaining} kali")
 
-def get_ai_response(prompt):
-    chat_completion = client.chat.completions.create(
-        messages=[{"role": "user", "content": prompt}],
-        model="llama-3.1-8b-instant",
-    )
-    return chat_completion.choices[0].message.content
+menu = st.sidebar.radio("Navigasi", ["Generator Ide", "Riwayat", "Upgrade Premium"])
 
-def can_access():
-    if st.session_state.is_premium: return True
-    if st.session_state.usage_count < 3: return True
-    return False
-
-menu = st.sidebar.radio("Navigasi", ["Generator Ide", "Thesis Lab", "Riwayat", "Upgrade Premium"])
-
+# 7. Halaman Utama
 if menu == "Generator Ide":
-    st.title("🎓 Skripsi Radar Si Anak Hukum")
+    st.title("🎓 Skripsi Radar")
     
+    # Form Input Utama
     with st.form("input_form"):
         col1, col2 = st.columns(2)
         with col1:
-            bidang = st.text_input("Bidang Hukum Diminati")
-            jenis = st.selectbox("Jenis Penelitian", ["Normatif", "Empiris", "Socio-Legal", "Perbandingan Hukum"])
+            bidang = st.text_input("Bidang Hukum")
+            jenis = st.selectbox("Jenis", ["Normatif", "Empiris", "Socio-Legal", "Perbandingan Hukum"])
         with col2:
-            isu = st.text_input("Isu/Fenomena Terkini")
-            level = st.select_slider("Level Kedalaman", options=["Umum & Aman", "Moderat", "Niche & Unik"])
+            isu = st.text_input("Isu Terkini")
+            level = st.select_slider("Kedalaman", options=["Umum", "Moderat", "Niche"])
         submitted = st.form_submit_button("Generate Judul")
 
     if submitted:
         if can_access():
-            with st.spinner("AI sedang meriset..."):
-                prompt = f"Berikan 5 ide judul skripsi {bidang} ({jenis}) tentang {isu}. Kedalaman: {level}."
-                response = get_ai_response(prompt)
-                st.session_state.latest_response = response
-                st.session_state.history.append({"tool": "Generator", "input": f"{bidang} ({isu})", "result": response})
-                if not st.session_state.is_premium: st.session_state.usage_count += 1
+            prompt = f"Berikan 5 ide judul skripsi {bidang} ({jenis}) tentang {isu}. Kedalaman: {level}."
+            response = get_ai_response(prompt)
+            st.session_state.latest_response = response
+            st.session_state.last_input = f"{bidang} - {isu}"
+            st.session_state.history.append({"tool": "Generator", "input": st.session_state.last_input, "result": response})
+            if not st.session_state.is_premium: st.session_state.usage_count += 1
         else:
-            st.warning("Limit gratis habis! Silakan Upgrade ke Premium.")
+            st.warning("Limit gratis habis!")
 
+    # Menampilkan Jawaban dan Shortcut
     if st.session_state.latest_response:
         st.markdown(f'<div class="main-card">{st.session_state.latest_response}</div>', unsafe_allow_html=True)
+        
+        st.write("---")
+        st.subheader("💡 Tindakan Lanjutan")
+        col_btn1, col_btn2, col_btn3 = st.columns(3)
+        
+        if col_btn1.button("Kembangkan Judul"):
+            with st.spinner("AI sedang mengembangkan..."):
+                resp = get_ai_response("Kembangkan judul ini menjadi lebih detail", st.session_state.latest_response)
+                st.session_state.latest_response = resp
+                st.rerun()
+        
+        if col_btn2.button("10 Alternatif"):
+            with st.spinner("Mencari alternatif..."):
+                resp = get_ai_response("Berikan 10 alternatif judul yang berbeda dari sebelumnya", st.session_state.latest_response)
+                st.session_state.latest_response = resp
+                st.rerun()
 
-elif menu == "Thesis Lab":
-    st.title("🛠 Thesis Lab")
-    sub_tool = st.selectbox("Pilih Alat:", ["Kembangkan Judul", "10 Alternatif", "Uji Dosen TTS"])
-    judul_input = st.text_input("Masukkan judul Anda:")
+        if col_btn3.button("Uji Dosen TTS"):
+            with st.spinner("Uji Dosen TTS..."):
+                resp = get_ai_response("Berikan simulasi pertanyaan kritis dosen penguji untuk judul ini", st.session_state.latest_response)
+                st.session_state.latest_response = resp
+                st.rerun()
 
-    if st.button("Jalankan Tools"):
-        if can_access():
-            with st.spinner("AI sedang bekerja..."):
-                prompt = f"{sub_tool} untuk judul: {judul_input}"
-                response = get_ai_response(prompt)
-                st.session_state.latest_response = response
-                st.session_state.history.append({"tool": sub_tool, "input": judul_input, "result": response})
-                if not st.session_state.is_premium: st.session_state.usage_count += 1
-        else:
-            st.warning("Limit gratis habis! Silakan Upgrade ke Premium.")
-
-    if st.session_state.latest_response:
-        st.markdown(f'<div class="main-card">{st.session_state.latest_response}</div>', unsafe_allow_html=True)
+        st.write("---")
+        # Kolom Chat
+        st.subheader("💬 Tanya Lebih Lanjut")
+        user_chat = st.chat_input("Ada yang ingin ditanyakan lagi tentang judul ini?")
+        if user_chat:
+            with st.spinner("AI sedang menjawab..."):
+                chat_resp = get_ai_response(user_chat, st.session_state.latest_response)
+                st.chat_message("user").write(user_chat)
+                st.chat_message("assistant").write(chat_resp)
 
 elif menu == "Riwayat":
     st.title("📜 Riwayat Lengkap")
     if st.session_state.history:
         for item in reversed(st.session_state.history): 
-            if isinstance(item, dict):
-                st.markdown(f"""
-                    <div class="history-card">
-                        <strong>{item.get('tool', 'Tool')}</strong>: {item.get('input', '')}<br>
-                        <small>Jawaban:</small><br>
-                        {str(item.get('result', '')).replace('\n', '<br>')}
-                    </div>
-                """, unsafe_allow_html=True)
-            else:
-                st.write(f"Riwayat: {item}")
-    else:
-        st.write("Belum ada riwayat.")
+            st.markdown(f"""
+                <div class="history-card">
+                    <strong>{item['tool']}</strong>: {item['input']}<br>
+                    {str(item['result']).replace('\n', '<br>')}
+                </div>
+            """, unsafe_allow_html=True)
 
 elif menu == "Upgrade Premium":
     st.title("💎 Upgrade ke Premium")
-    st.markdown("- **E-Wallet:** DANA | 085922033291 (E*S* J******* E***** B******)")
-    st.link_button("Konfirmasi via WhatsApp", "https://wa.me/6285922033291?text=Halo%20Admin,%20saya%20sudah%20transfer%20untuk%20Skripsi%20Radar.")
+    st.markdown("- **E-Wallet:** DANA | 085922033291")
+    st.link_button("Konfirmasi via WhatsApp", "https://wa.me/6285922033291")
