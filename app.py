@@ -141,5 +141,5 @@ elif menu == "Riwayat":
 
 elif menu == "Upgrade Premium":
     st.title("💎 Upgrade ke Premium")
-    st.markdown("- **Bank:** BRI | 068801022550502 (ELSA JAINIFER EUNIKE BAGARAI)")
+    st.markdown("- **E-Wallet:** DANA | 085922033291 (E*S* J******* E***** B******)")
     st.link_button("Konfirmasi via WhatsApp", "https://wa.me/6285922033291?text=Halo%20Admin,%20saya%20sudah%20transfer%20untuk%20Skripsi%20Radar.")
