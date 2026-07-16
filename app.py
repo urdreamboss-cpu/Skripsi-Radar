@@ -1,10 +1,8 @@
 import streamlit as st
 from groq import Groq
 
-# 1. Konfigurasi Halaman
-st.set_page_config(page_title="Skripsi Radar Pro", page_icon="🎓", layout="wide")
+#st.set_page_config(page_title="Skripsi Radar Pro", page_icon="🎓", layout="wide")
 
-# 2. CSS Kustom dengan Tema Maroon
 st.markdown("""
     <style>
     .main-card { 
@@ -28,21 +26,19 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 3. Inisialisasi State
-if 'is_premium' not in st.session_state: st.session_state.is_premium = False
+#if 'is_premium' not in st.session_state: st.session_state.is_premium = False
 if 'usage_count' not in st.session_state: st.session_state.usage_count = 0
 if 'history' not in st.session_state: st.session_state.history = []
-if 'latest_response' not in st.session_state: st.session_state.latest_response = None
+if 'content_list' not in st.session_state: st.session_state.content_list = [] # List untuk menampung hasil
 if 'last_input' not in st.session_state: st.session_state.last_input = ""
+if 'active_shortcut' not in st.session_state: st.session_state.active_shortcut = None
 
-# 4. Koneksi API
-try:
+#try:
     client = Groq(api_key=st.secrets["API_KEY"])
 except:
     st.error("API Key belum disetting di Secrets!")
     st.stop()
 
-# 5. Fungsi AI
 def get_ai_response(prompt, context=""):
     full_prompt = f"Konteks: {context}\n\nPermintaan: {prompt}" if context else prompt
     chat_completion = client.chat.completions.create(
@@ -55,8 +51,7 @@ def can_access():
     if st.session_state.is_premium: return True
     return st.session_state.usage_count < 3
 
-# 6. Sidebar
-st.sidebar.title("Login Akses")
+#st.sidebar.title("Login Akses")
 if not st.session_state.is_premium:
     with st.sidebar.expander("🔑 Aktivasi Premium"):
         activation_code = st.text_input("Masukkan Kode Aktivasi", type="password")
@@ -76,11 +71,9 @@ else:
 
 menu = st.sidebar.radio("Navigasi", ["Generator Ide", "Riwayat", "Upgrade Premium"])
 
-# 7. Halaman Utama
-if menu == "Generator Ide":
+#if menu == "Generator Ide":
     st.title("🎓 Skripsi Radar")
     
-    # Form Input Utama
     with st.form("input_form"):
         col1, col2 = st.columns(2)
         with col1:
@@ -95,38 +88,57 @@ if menu == "Generator Ide":
         if can_access():
             prompt = f"Berikan 5 ide judul skripsi {bidang} ({jenis}) tentang {isu}. Kedalaman: {level}."
             response = get_ai_response(prompt)
-            st.session_state.latest_response = response
+            st.session_state.content_list = [response] # Reset list dengan hasil baru
             st.session_state.last_input = f"{bidang} - {isu}"
             st.session_state.history.append({"tool": "Generator", "input": st.session_state.last_input, "result": response})
             if not st.session_state.is_premium: st.session_state.usage_count += 1
         else:
             st.warning("Limit gratis habis!")
 
-    # Menampilkan Jawaban dan Shortcut
-    if st.session_state.latest_response:
-        st.markdown(f'<div class="main-card">{st.session_state.latest_response}</div>', unsafe_allow_html=True)
+    # Tampilkan semua konten dalam list (bukan cuma satu)
+    for content in st.session_state.content_list:
+        st.markdown(f'<div class="main-card">{content}</div>', unsafe_allow_html=True)
         
+    if len(st.session_state.content_list) > 0: # Hanya munculkan opsi jika sudah ada konten
         st.write("---")
         st.subheader("💡 Tindakan Lanjutan")
+        
         col_btn1, col_btn2, col_btn3 = st.columns(3)
         
         if col_btn1.button("Kembangkan Judul"):
-            with st.spinner("AI sedang mengembangkan..."):
-                resp = get_ai_response("Kembangkan judul ini menjadi lebih detail", st.session_state.latest_response)
-                st.session_state.latest_response = resp
-                st.rerun()
+            st.session_state.active_shortcut = "Kembangkan"
+            st.rerun()
         
-        if col_btn2.button("10 Alternatif"):
-            with st.spinner("Mencari alternatif..."):
-                resp = get_ai_response("Berikan 10 alternatif judul yang berbeda dari sebelumnya", st.session_state.latest_response)
-                st.session_state.latest_response = resp
-                st.rerun()
-
         if col_btn3.button("Uji Dosen TTS"):
-            with st.spinner("Uji Dosen TTS..."):
-                resp = get_ai_response("Berikan simulasi pertanyaan kritis dosen penguji untuk judul ini", st.session_state.latest_response)
-                st.session_state.latest_response = resp
-                st.rerun()
+            st.session_state.active_shortcut = "Uji Dosen"
+            st.rerun()
+
+        if st.session_state.active_shortcut:
+            st.write("---")
+            with st.container():
+                st.info(f"Opsi dipilih: **{st.session_state.active_shortcut}**")
+                target_num = st.number_input("Judul nomor berapa yang ingin kamu proses? (1-5)", min_value=1, max_value=5, value=1)
+                
+                c_run, c_cancel = st.columns([1, 4])
+                if c_run.button("Jalankan"):
+                    with st.spinner(f"Memproses {st.session_state.active_shortcut}..."):
+                        # Menggunakan item terakhir dari list sebagai konteks
+                        context = st.session_state.content_list[-1]
+                        prompts = {
+                            "Kembangkan": f"Kembangkan detail skripsi untuk judul nomor {target_num} dari daftar ini: {context}",
+                            "Alternatif": f"Berikan 10 alternatif judul yang lebih spesifik untuk judul nomor {target_num} dari daftar ini: {context}",
+                            "Uji Dosen": f"Berikan simulasi pertanyaan kritis dosen penguji khusus untuk judul nomor {target_num} dari daftar ini: {context}"
+                        }
+                        
+                        resp = get_ai_response(prompts[st.session_state.active_shortcut], context)
+                        # Tambahkan hasil baru ke list, bukan menimpa
+                        st.session_state.content_list.append(resp) 
+                        st.session_state.active_shortcut = None 
+                        st.rerun()
+                
+                if c_cancel.button("Batal"):
+                    st.session_state.active_shortcut = None
+                    st.rerun()
 
         st.write("---")
         # Kolom Chat
@@ -138,7 +150,7 @@ if menu == "Generator Ide":
                 st.chat_message("user").write(user_chat)
                 st.chat_message("assistant").write(chat_resp)
 
-elif menu == "Riwayat":
+#elif menu == "Riwayat":
     st.title("📜 Riwayat Lengkap")
     if st.session_state.history:
         for item in reversed(st.session_state.history): 
@@ -149,7 +161,7 @@ elif menu == "Riwayat":
                 </div>
             """, unsafe_allow_html=True)
 
-elif menu == "Upgrade Premium":
+#elif menu == "Upgrade Premium":
     st.title("💎 Upgrade ke Premium")
     st.markdown("- **E-Wallet:** DANA | 085922033291")
     st.link_button("Konfirmasi via WhatsApp", "https://wa.me/6285922033291")
