@@ -76,7 +76,7 @@ def can_access():
 menu = st.sidebar.radio("Navigasi", ["Generator Ide", "Thesis Lab", "Riwayat", "Upgrade Premium"])
 
 if menu == "Generator Ide":
-    st.title("🎓 Generator Judul Skripsi Hukum")
+    st.title("🎓 Skripsi Radar Si Anak Hukum")
     
     with st.form("input_form"):
         col1, col2 = st.columns(2)
@@ -102,8 +102,8 @@ if menu == "Generator Ide":
     if st.session_state.latest_response:
         st.markdown(f'<div class="main-card">{st.session_state.latest_response}</div>', unsafe_allow_html=True)
 
-elif menu == "Thesis Lab":
-    st.title("🛠 Thesis Lab")
+elif menu == "Skripsi Lab":
+    st.title("🛠 Skripsi Lab")
     sub_tool = st.selectbox("Pilih Alat:", ["Kembangkan Judul", "10 Alternatif", "Uji Dosen TTS"])
     judul_input = st.text_input("Masukkan judul Anda:")
 
