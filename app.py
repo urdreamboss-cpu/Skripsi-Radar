@@ -25,7 +25,7 @@ st.markdown("""
     }
     .stButton>button { width: 100%; border-radius: 0.5rem; background-color: #800000; color: white; font-weight: 600; }
     </style>
-""", unsafe_html=True)
+""", unsafe_allow_html=True)
 
 if 'is_premium' not in st.session_state: st.session_state.is_premium = False
 if 'usage_count' not in st.session_state: st.session_state.usage_count = 0
