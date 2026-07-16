@@ -1,10 +1,8 @@
 import streamlit as st
 from groq import Groq
 
-# 1. Konfigurasi Halaman
 st.set_page_config(page_title="Skripsi Radar Si Anak Hukum", page_icon="🎓", layout="wide")
 
-# 2. CSS Kustom dengan Tema Maroon
 st.markdown("""
     <style>
     .main-card { 
@@ -20,41 +18,55 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 3. Inisialisasi State
 if 'is_premium' not in st.session_state: st.session_state.is_premium = False
 if 'content_list' not in st.session_state: st.session_state.content_list = []
 if 'pending_shortcut' not in st.session_state: st.session_state.pending_shortcut = None
 if 'usage_count' not in st.session_state: st.session_state.usage_count = 0
 
-# 4. Koneksi API
 try:
     client = Groq(api_key=st.secrets["API_KEY"])
 except Exception as e:
     st.error("API Key belum dikonfigurasi di Secrets!")
     st.stop()
 
-# 5. Fungsi AI
-def get_ai_response(prompt, context=""):
+def check_usage_and_generate(prompt, context=""):
+    """Fungsi untuk mengecek kuota sebelum memanggil AI"""
+    if not st.session_state.is_premium and st.session_state.usage_count >= 3:
+        st.error("⚠️ **Kuota Gratis Anda telah habis!** Silakan buka menu 'Upgrade Premium' untuk akses tanpa batas.")
+        return None
+    
+    # Panggil AI
     full_prompt = f"Konteks Sebelumnya: {context}\n\nPermintaan: {prompt}" if context else prompt
     chat_completion = client.chat.completions.create(
         messages=[{"role": "user", "content": full_prompt}],
         model="llama-3.1-8b-instant",
     )
-    return chat_completion.choices[0].message.content
+    response = chat_completion.choices[0].message.content
+    
+    # Increment kuota jika bukan premium
+    if not st.session_state.is_premium:
+        st.session_state.usage_count += 1
+    
+    return response
 
-# 6. Sidebar Navigasi
 st.sidebar.title("Navigasi")
 menu = st.sidebar.radio("Menu", ["Generator Ide", "Riwayat", "Upgrade Premium"])
 
 if st.sidebar.button("Hapus Riwayat Chat"):
     st.session_state.content_list = []
+    st.session_state.usage_count = 0
     st.rerun()
 
-# 7. Halaman Utama
 if menu == "Generator Ide":
     st.title("🎓 Skripsi Radar Si Anak Hukum")
     
-    # Form Input
+    # Tampilkan info kuota
+    if not st.session_state.is_premium:
+        sisa = max(0, 3 - st.session_state.usage_count)
+        st.info(f"**Kuota Gratis Anda:** {sisa} / 3 tersisa")
+    else:
+        st.success("✅ Akun Premium Aktif (Tanpa Batas)")
+    
     with st.form("input_form"):
         col1, col2 = st.columns(2)
         with col1:
@@ -67,11 +79,12 @@ if menu == "Generator Ide":
 
     if submitted:
         prompt = f"Berikan 10 ide judul skripsi {bidang} ({jenis}) tentang {isu}. Kedalaman: {level}. Berikan dalam format nomor 1-10."
-        response = get_ai_response(prompt)
-        st.session_state.content_list.append({"role": "AI", "text": response})
-        st.rerun()
+        response = check_usage_and_generate(prompt)
+        if response:
+            st.session_state.content_list.append({"role": "AI", "text": response})
+            st.rerun()
 
-    # Tampilkan Riwayat Konten
+    # Tampilkan Riwayat
     for content in st.session_state.content_list:
         st.markdown(f'<div class="main-card">{content["text"]}</div>', unsafe_allow_html=True)
 
@@ -85,27 +98,28 @@ if menu == "Generator Ide":
         if col_btn2.button("Alternatif judul"): st.session_state.pending_shortcut = "Alternatif"
         if col_btn3.button("Uji Dosen TTS"): st.session_state.pending_shortcut = "Uji Dosen"
 
-        # Jika ada shortcut yang pending, tampilkan pilihan nomor
         if st.session_state.pending_shortcut:
             st.info(f"Pilih nomor judul (1-10) untuk: {st.session_state.pending_shortcut}")
             selected_num = st.number_input("Nomor Judul", min_value=1, max_value=10, step=1)
             if st.button("Proses Sekarang"):
                 context = st.session_state.content_list[-1]['text']
                 prompt = f"Fokus pada judul nomor {selected_num}. Permintaan: {st.session_state.pending_shortcut}."
-                resp = get_ai_response(prompt, context)
-                st.session_state.content_list.append({"role": "AI", "text": resp})
-                st.session_state.pending_shortcut = None
-                st.rerun()
+                resp = check_usage_and_generate(prompt, context)
+                if resp:
+                    st.session_state.content_list.append({"role": "AI", "text": resp})
+                    st.session_state.pending_shortcut = None
+                    st.rerun()
 
         # Chat Interface
         st.subheader("💬 Tanya Lebih Lanjut")
         user_chat = st.chat_input("Tanyakan sesuatu tentang judul skripsi Anda...")
         if user_chat:
             context = st.session_state.content_list[-1]['text'] if st.session_state.content_list else ""
-            resp = get_ai_response(user_chat, context)
-            st.session_state.content_list.append({"role": "User", "text": user_chat})
-            st.session_state.content_list.append({"role": "AI", "text": resp})
-            st.rerun()
+            resp = check_usage_and_generate(user_chat, context)
+            if resp:
+                st.session_state.content_list.append({"role": "User", "text": user_chat})
+                st.session_state.content_list.append({"role": "AI", "text": resp})
+                st.rerun()
 
 elif menu == "Riwayat":
     st.title("📜 Riwayat Lengkap")
@@ -123,5 +137,6 @@ elif menu == "Upgrade Premium":
             if code == st.secrets.get("PREMIUM_KEY", "RAHASIA_123"):
                 st.session_state.is_premium = True
                 st.success("Berhasil! Akun Anda kini Premium.")
+                st.rerun()
             else:
                 st.error("Kode salah.")
