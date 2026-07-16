@@ -82,7 +82,7 @@ if menu == "Generator Ide":
         col_btn1, col_btn2, col_btn3 = st.columns(3)
         
         if col_btn1.button("Kembangkan Judul"): st.session_state.pending_shortcut = "Kembangkan"
-        if col_btn2.button("10 Alternatif"): st.session_state.pending_shortcut = "Alternatif"
+        if col_btn2.button("Alternatif judul"): st.session_state.pending_shortcut = "Alternatif"
         if col_btn3.button("Uji Dosen TTS"): st.session_state.pending_shortcut = "Uji Dosen"
 
         # Jika ada shortcut yang pending, tampilkan pilihan nomor
@@ -115,7 +115,7 @@ elif menu == "Riwayat":
 elif menu == "Upgrade Premium":
     st.title("💎 Upgrade ke Premium")
     st.write("Dapatkan akses fitur tanpa batas dan dukungan prioritas.")
-    st.info("Pembayaran: DANA | 085922033291 | A/N: [Nama Anda]")
+    st.info("Pembayaran: DANA | 085922033291 | A/N: [EL** J******* E***** B******]")
     
     with st.expander("🔑 Aktivasi Premium"):
         code = st.text_input("Masukkan Kode Aktivasi", type="password")
