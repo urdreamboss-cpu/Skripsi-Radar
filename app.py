@@ -13,6 +13,14 @@ st.markdown("""
         box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); 
         border: 1px solid #e2e8f0; 
         color: #1e293b; 
+        margin-bottom: 1rem;
+    }
+    .history-card {
+        background: #f8fafc;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid #2563eb;
     }
     .stButton>button { width: 100%; border-radius: 0.5rem; background-color: #2563eb; color: white; font-weight: 600; }
     </style>
@@ -22,6 +30,7 @@ st.markdown("""
 if 'is_premium' not in st.session_state: st.session_state.is_premium = False
 if 'usage_count' not in st.session_state: st.session_state.usage_count = 0
 if 'history' not in st.session_state: st.session_state.history = []
+if 'latest_response' not in st.session_state: st.session_state.latest_response = None
 
 # --- Konfigurasi AI & Secrets ---
 try:
@@ -32,7 +41,6 @@ except:
 
 # --- Sidebar & Login / Aktivasi ---
 st.sidebar.title("Login Akses")
-# Fitur Aktivasi Premium
 if not st.session_state.is_premium:
     with st.sidebar.expander("🔑 Aktivasi Premium"):
         activation_code = st.text_input("Masukkan Kode Aktivasi", type="password")
@@ -78,7 +86,6 @@ if menu == "Generator Ide":
         with col2:
             isu = st.text_input("Isu/Fenomena Terkini")
             level = st.select_slider("Level Kedalaman", options=["Umum & Aman", "Moderat", "Niche & Unik"])
-        
         submitted = st.form_submit_button("Generate Judul")
 
     if submitted:
@@ -86,11 +93,18 @@ if menu == "Generator Ide":
             with st.spinner("AI sedang meriset..."):
                 prompt = f"Berikan 5 ide judul skripsi {bidang} ({jenis}) tentang {isu}. Kedalaman: {level}."
                 response = get_ai_response(prompt)
-                st.markdown(f'<div class="main-card">{response}</div>', unsafe_allow_html=True)
-                st.session_state.history.append(f"Generator: {bidang} - {isu}")
+                
+                # Simpan ke State & History
+                st.session_state.latest_response = response
+                st.session_state.history.append({"tool": "Generator", "input": f"{bidang} ({isu})", "result": response})
+                
                 if not st.session_state.is_premium: st.session_state.usage_count += 1
         else:
             st.warning("Limit gratis habis! Silakan Upgrade ke Premium.")
+
+    # Tampilkan hasil jika ada (PERSISTENCE)
+    if st.session_state.latest_response:
+        st.markdown(f'<div class="main-card">{st.session_state.latest_response}</div>', unsafe_allow_html=True)
 
 elif menu == "Thesis Lab":
     st.title("🛠 Thesis Lab")
@@ -102,20 +116,35 @@ elif menu == "Thesis Lab":
             with st.spinner("AI sedang bekerja..."):
                 prompt = f"{sub_tool} untuk judul: {judul_input}"
                 response = get_ai_response(prompt)
-                st.markdown(f'<div class="main-card">{response}</div>', unsafe_allow_html=True)
-                st.session_state.history.append(f"{sub_tool}: {judul_input}")
+                
+                # Simpan ke State & History
+                st.session_state.latest_response = response
+                st.session_state.history.append({"tool": sub_tool, "input": judul_input, "result": response})
+                
                 if not st.session_state.is_premium: st.session_state.usage_count += 1
         else:
             st.warning("Limit gratis habis! Silakan Upgrade ke Premium.")
 
+    # Tampilkan hasil jika ada
+    if st.session_state.latest_response:
+        st.markdown(f'<div class="main-card">{st.session_state.latest_response}</div>', unsafe_allow_html=True)
+
 elif menu == "Riwayat":
-    st.title("📜 Riwayat")
-    for item in st.session_state.history: st.write("- " + item)
+    st.title("📜 Riwayat Lengkap")
+    if st.session_state.history:
+        for item in reversed(st.session_state.history): # Terbaru di atas
+            st.markdown(f"""
+                <div class="history-card">
+                    <strong>{item['tool']}</strong>: {item['input']}<br>
+                    <small>Jawaban:</small><br>
+                    {item['result'].replace('\n', '<br>')}
+                </div>
+            """, unsafe_allow_html=True)
+    else:
+        st.write("Belum ada riwayat.")
 
 elif menu == "Upgrade Premium":
     st.title("💎 Upgrade ke Premium")
-    st.markdown("""
-    - **E-Wallet:** DANA | 085922033291 (E*S* J******* E***** BA*****)
-    - **Jumlah:** Rp 25.000
-    """)
-    st.link_button("Konfirmasi via WhatsApp", "[https://wa.me/6285922033291?text=Halo%20Admin,%20saya%20sudah%20transfer%20untuk%20Skripsi%20Radar](https://wa.me/6285922033291?text=Halo%20Admin,%20saya%20sudah%20transfer%20untuk%20Skripsi%20Radar).")
+    st.markdown("### Keuntungan Premium: Akses Tanpa Batas & Fitur Lanjutan")
+    st.markdown("- **E-Wallet:** DANA | 085922033291 (E*S* J******* E***** B******)")
+    st.link_button("Konfirmasi via WhatsApp", "https://wa.me/6285922033291?text=Halo%20Admin,%20saya%20sudah%20transfer%20untuk%20Skripsi%20Radar.")
