@@ -95,7 +95,7 @@ if menu == "Generator Ide":
             st.warning("Limit gratis habis! Silakan Upgrade ke Premium.")
 
     if st.session_state.latest_response:
-        st.markdown(f'<div class="main-card">{st.session_state.latest_response}</div>', unsafe_html=True)
+        st.markdown(f'<div class="main-card">{st.session_state.latest_response}</div>', unsafe_allow_html=True)
 
 elif menu == "Thesis Lab":
     st.title("🛠 Thesis Lab")
@@ -114,7 +114,7 @@ elif menu == "Thesis Lab":
             st.warning("Limit gratis habis! Silakan Upgrade ke Premium.")
 
     if st.session_state.latest_response:
-        st.markdown(f'<div class="main-card">{st.session_state.latest_response}</div>', unsafe_html=True)
+        st.markdown(f'<div class="main-card">{st.session_state.latest_response}</div>', unsafe_allow_html=True)
 
 elif menu == "Riwayat":
     st.title("📜 Riwayat Lengkap")
@@ -127,7 +127,7 @@ elif menu == "Riwayat":
                         <small>Jawaban:</small><br>
                         {str(item.get('result', '')).replace('\n', '<br>')}
                     </div>
-                """, unsafe_html=True)
+                """, unsafe_allow_html=True)
             else:
                 st.write(f"Riwayat: {item}")
     else:
